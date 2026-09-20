@@ -173,7 +173,7 @@ public class IntentoExamenService {
     public List<IntentoExamenResponse> listarPorCandidato(String username) {
         Usuario candidato = usuarioRepository.findByUsername(username)
             .orElseThrow(() -> new EntityNotFoundException("Usuario", username));
-        return intentoExamenRepository.findByCandidatoId(candidato.getId()).stream()
+        return intentoExamenRepository.findByCandidatoIdOrderByCreatedAtDesc(candidato.getId()).stream()
             .map(this::toResponse)
             .toList();
     }
