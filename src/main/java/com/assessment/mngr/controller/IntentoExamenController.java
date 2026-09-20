@@ -67,14 +67,39 @@ public class IntentoExamenController {
     }
 
     @GetMapping("/{intentoId}/resultado")
-    @PreAuthorize("hasRole('CANDIDATO')")
+    @PreAuthorize("hasAnyRole('CANDIDATO', 'ADMIN')")
     public ResponseEntity<ResultadoIntentoResponse> getResultado(
             @PathVariable Long intentoId,
             Authentication authentication) {
         log.info("[REQUEST] GET /api/intentos/{}/resultado — usuario: {}", intentoId, authentication.getName());
-        ResultadoIntentoResponse response = intentoExamenService.obtenerResultadoCandidato(intentoId, authentication.getName());
+        boolean isAdmin = authentication.getAuthorities().stream()
+            .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        ResultadoIntentoResponse response;
+        if (isAdmin) {
+            response = intentoExamenService.obtenerResultadoDetallado(intentoId);
+        } else {
+            response = intentoExamenService.obtenerResultadoCandidato(intentoId, authentication.getName());
+        }
         log.info("[RESPONSE] GET /api/intentos/{}/resultado — estado: {}", intentoId, response.estado());
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/mis-intentos")
+    @PreAuthorize("hasRole('CANDIDATO')")
+    public ResponseEntity<List<IntentoExamenResponse>> misIntentos(Authentication authentication) {
+        log.info("[REQUEST] GET /api/intentos/mis-intentos — usuario: {}", authentication.getName());
+        return ResponseEntity.ok(intentoExamenService.listarPorCandidato(authentication.getName()));
+    }
+
+    @GetMapping("/candidato/{candidatoId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<IntentoExamenResponse>> listarPorCandidato(
+            @PathVariable Long candidatoId,
+            Authentication authentication) {
+        log.info("[REQUEST] GET /api/intentos/candidato/{} — usuario: {}", candidatoId, authentication.getName());
+        List<IntentoExamenResponse> intentos = intentoExamenService.listarPorCandidatoId(candidatoId);
+        log.info("[RESPONSE] GET /api/intentos/candidato/{} — count: {}", candidatoId, intentos.size());
+        return ResponseEntity.ok(intentos);
     }
 
     @GetMapping("/{intentoId}/preguntas")
@@ -100,12 +125,5 @@ public class IntentoExamenController {
         boolean isAdmin = authentication.getAuthorities().stream()
             .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
         return ResponseEntity.ok(intentoExamenService.buscarPorIdConValidacion(id, authentication.getName(), isAdmin));
-    }
-
-    @GetMapping("/mis-intentos")
-    @PreAuthorize("hasRole('CANDIDATO')")
-    public ResponseEntity<List<IntentoExamenResponse>> misIntentos(Authentication authentication) {
-        log.info("[REQUEST] GET /api/intentos/mis-intentos — usuario: {}", authentication.getName());
-        return ResponseEntity.ok(intentoExamenService.listarPorCandidato(authentication.getName()));
     }
 }

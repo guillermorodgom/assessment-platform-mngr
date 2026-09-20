@@ -240,6 +240,16 @@ public class IntentoExamenService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<IntentoExamenResponse> listarPorCandidatoId(Long candidatoId) {
+        if (!usuarioRepository.existsById(candidatoId)) {
+            throw new EntityNotFoundException("Usuario", candidatoId);
+        }
+        return intentoExamenRepository.findByCandidatoIdOrderByCreatedAtDesc(candidatoId).stream()
+            .map(this::toResponse)
+            .toList();
+    }
+
     private void validarIntentoActivo(IntentoExamen intento, String username) {
         if (!intento.getCandidato().getUsername().equals(username)) {
             throw new BusinessException("Este intento no pertenece al usuario actual");
