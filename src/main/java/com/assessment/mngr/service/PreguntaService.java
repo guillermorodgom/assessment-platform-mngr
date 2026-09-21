@@ -259,6 +259,22 @@ public class PreguntaService {
         );
     }
 
+    public PreguntaResponse toResponseForCandidato(Pregunta p) {
+        return new PreguntaResponse(
+            p.getId(),
+            p.getTitulo(),
+            p.getDescripcion(),
+            p.getTipoPregunta(),
+            p.getLenguajesPermitidos(),
+            p.getPuntaje(),
+            List.of(),
+            p.getOpciones().stream()
+                .map(o -> new OpcionRespuestaResponse(o.getId(), o.getTexto(), null))
+                .toList(),
+            List.of()
+        );
+    }
+
     private OpcionRespuestaResponse toOpcionResponse(OpcionRespuesta o) {
         return new OpcionRespuestaResponse(o.getId(), o.getTexto(), o.getEsCorrecta());
     }
