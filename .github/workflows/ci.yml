@@ -1,5 +1,4 @@
-# Copiar a .github/workflows/ci.yml en cada repo backend (auth, mngr, compiler)
-name: CI - Backend
+name: CI - Backend 🚀
 
 on:
   push:
