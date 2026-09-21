@@ -84,6 +84,18 @@ public class IntentoExamenController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/{intentoId}/ejecutar")
+    @PreAuthorize("hasRole('CANDIDATO')")
+    public ResponseEntity<CompilerResponse> ejecutarCodigo(
+            @PathVariable Long intentoId,
+            @Valid @RequestBody EjecutarCodigoRequest request,
+            Authentication authentication) {
+        log.info("[REQUEST] POST /api/intentos/{}/ejecutar — usuario: {}, preguntaId: {}", intentoId, authentication.getName(), request.preguntaId());
+        CompilerResponse response = intentoExamenService.ejecutarCodigo(intentoId, request, authentication.getName());
+        log.info("[RESPONSE] POST /api/intentos/{}/ejecutar — success: {}", intentoId, response.success());
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/mis-intentos")
     @PreAuthorize("hasRole('CANDIDATO')")
     public ResponseEntity<List<IntentoExamenResponse>> misIntentos(Authentication authentication) {

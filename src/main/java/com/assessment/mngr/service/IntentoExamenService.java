@@ -1,5 +1,6 @@
 package com.assessment.mngr.service;
 
+import com.assessment.mngr.client.CompilerClient;
 import com.assessment.mngr.controller.dto.*;
 import com.assessment.mngr.exception.BusinessException;
 import com.assessment.mngr.exception.EntityNotFoundException;
@@ -29,6 +30,7 @@ public class IntentoExamenService {
     private final CalificacionService calificacionService;
     private final AsignacionCuestionarioService asignacionCuestionarioService;
     private final PreguntaService preguntaService;
+    private final CompilerClient compilerClient;
 
     public IntentoExamenResponse iniciarIntento(IniciarIntentoRequest request, String username) {
         Usuario candidato = usuarioRepository.findByUsername(username)
@@ -250,6 +252,49 @@ public class IntentoExamenService {
         return intentoExamenRepository.findByCandidatoIdOrderByCreatedAtDesc(candidatoId).stream()
             .map(this::toResponse)
             .toList();
+    }
+
+    public CompilerResponse ejecutarCodigo(Long intentoId, EjecutarCodigoRequest request, String username) {
+        IntentoExamen intento = intentoExamenRepository.findById(intentoId)
+            .orElseThrow(() -> new EntityNotFoundException("IntentoExamen", intentoId));
+
+        validarIntentoActivo(intento, username);
+
+        RespuestaCandidato respuesta = respuestaCandidatoRepository
+            .findByIntentoExamenIdAndPreguntaId(intentoId, request.preguntaId())
+            .orElseThrow(() -> new BusinessException("La pregunta no pertenece a este intento de examen"));
+
+        Pregunta pregunta = respuesta.getPregunta();
+        if (pregunta.getTipoPregunta() != TipoPregunta.CODIGO) {
+            throw new BusinessException("Solo se puede ejecutar codigo en preguntas de tipo CODIGO");
+        }
+
+        List<CompilerRequest.TestCaseDto> testCases = pregunta.getCasosDePrueba().stream()
+            .map(c -> new CompilerRequest.TestCaseDto(c.getInput(), c.getExpectedOutput()))
+            .toList();
+
+        CompilerRequest compilerRequest = new CompilerRequest(
+            request.sourceCode(),
+            request.language(),
+            testCases
+        );
+
+        CompilerResponse result = compilerClient.execute(compilerRequest);
+        log.info("[EJECUTAR] Codigo ejecutado — intentoId: {}, preguntaId: {}, lenguaje: {}, success: {}", intentoId, request.preguntaId(), request.language(), result != null && result.success());
+
+        // Filtrar testResults: el candidato solo ve "Caso 1: pasó/no pasó", sin input/expectedOutput
+        List<CompilerResponse.TestResult> filteredResults = result != null && result.testResults() != null
+            ? result.testResults().stream()
+                .map(tr -> new CompilerResponse.TestResult(null, null, null, tr.passed()))
+                .toList()
+            : List.of();
+
+        return new CompilerResponse(
+            result != null && result.success(),
+            result != null ? result.output() : null,
+            result != null ? result.error() : null,
+            filteredResults
+        );
     }
 
     private void validarIntentoActivo(IntentoExamen intento, String username) {
