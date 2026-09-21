@@ -114,7 +114,7 @@ public class IntentoExamenService {
 
         respuesta = respuestaCandidatoRepository.save(respuesta);
         log.info("[CREAR] Respuesta enviada — intentoId: {}, preguntaId: {}, esCorrecta: {}", intentoId, request.preguntaId(), respuesta.getEsCorrecta());
-        return toRespuestaResponse(respuesta);
+        return toRespuestaResponseForCandidato(respuesta);
     }
 
     public ResultadoIntentoResponse finalizarIntento(Long intentoId, String username) {
@@ -236,7 +236,9 @@ public class IntentoExamenService {
 
         List<RespuestaCandidato> respuestas = respuestaCandidatoRepository.findByIntentoExamenId(intentoId);
         return respuestas.stream()
-            .map(r -> preguntaService.toResponse(r.getPregunta()))
+            .map(r -> isAdmin
+                ? preguntaService.toResponse(r.getPregunta())
+                : preguntaService.toResponseForCandidato(r.getPregunta()))
             .toList();
     }
 
@@ -289,6 +291,21 @@ public class IntentoExamenService {
             i.getPuntajeMaximo(),
             i.getTiempoConsumido(),
             respuestas.stream().map(this::toRespuestaResponse).toList()
+        );
+    }
+
+    private RespuestaCandidatoResponse toRespuestaResponseForCandidato(RespuestaCandidato r) {
+        return new RespuestaCandidatoResponse(
+            r.getId(),
+            r.getPregunta().getId(),
+            r.getPregunta().getTitulo(),
+            r.getCodigoFuente(),
+            r.getLenguaje(),
+            r.getOpcionesSeleccionadas(),
+            r.getResultadoEjecucion(),
+            r.getSalidaObtenida(),
+            null,
+            r.getPuntajeObtenido()
         );
     }
 

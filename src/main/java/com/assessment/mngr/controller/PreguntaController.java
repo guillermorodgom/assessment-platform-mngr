@@ -49,6 +49,7 @@ public class PreguntaController {
     }
 
     @GetMapping("/api/cuestionarios/{cuestionarioId}/preguntas")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<PreguntaResponse>> listarPorCuestionario(
             @PathVariable Long cuestionarioId) {
         log.info("[REQUEST] GET /api/cuestionarios/{}/preguntas", cuestionarioId);
@@ -56,6 +57,7 @@ public class PreguntaController {
     }
 
     @GetMapping("/api/preguntas/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PreguntaResponse> buscarPorId(@PathVariable Long id) {
         log.info("[REQUEST] GET /api/preguntas/{}", id);
         return ResponseEntity.ok(preguntaService.buscarPorId(id));
